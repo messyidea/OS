@@ -82,7 +82,7 @@ void HariMain(void)
 	/* sht_win */
 	sht_win   = sheet_alloc(shtctl);
 	buf_win   = (unsigned char *) memman_alloc_4k(memman, 160 * 52);
-	sheet_setbuf(sht_win, buf_win, 144, 52, -1); /* 摟柧怓側偟 */
+	sheet_setbuf(sht_win, buf_win, 144, 52, -1); /* 无透明色 */
 	make_window8(buf_win, 144, 52, "task_a", 1);
 	make_textbox8(sht_win, 8, 28, 128, 16, COL8_FFFFFF);
 	cursor_x = 8;
@@ -97,13 +97,15 @@ void HariMain(void)
 	init_mouse_cursor8(buf_mouse, 99);
 	mx = (binfo->scrnx - 16) / 2; /* 中间位置 */
 	my = (binfo->scrny - 28 - 16) / 2;
-
+	
+	//移动窗口位置 
 	sheet_slide(sht_back, 0, 0);
 	sheet_slide(sht_win_b[0], 168,  56);
 	sheet_slide(sht_win_b[1],   8, 116);
 	sheet_slide(sht_win_b[2], 168, 116);
 	sheet_slide(sht_win,        8,  56);
 	sheet_slide(sht_mouse, mx, my);
+	//分配窗口高度 
 	sheet_updown(sht_back,     0);
 	sheet_updown(sht_win_b[0], 1);
 	sheet_updown(sht_win_b[1], 2);
@@ -124,24 +126,24 @@ void HariMain(void)
 		} else {
 			i = fifo32_get(&fifo);
 			io_sti();
-			if (256 <= i && i <= 511) { /* 僉乕儃乕僪僨乕僞 */
+			if (256 <= i && i <= 511) { /* 键盘数据 */
 				sprintf(s, "%02X", i - 256);
 				putfonts8_asc_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
 				if (i < 0x54 + 256) {
-					if (keytable[i - 256] != 0 && cursor_x < 128) { /* 捠忢暥帤 */
-						/* 堦暥帤昞帵偟偰偐傜丄僇乕僜儖傪1偮恑傔傞 */
+					if (keytable[i - 256] != 0 && cursor_x < 128) { /* 一般字符 */
+						/* 显示一个字符前移一次光标 */
 						s[0] = keytable[i - 256];
 						s[1] = 0;
 						putfonts8_asc_sht(sht_win, cursor_x, 28, COL8_000000, COL8_FFFFFF, s, 1);
 						cursor_x += 8;
 					}
 				}
-				if (i == 256 + 0x0e && cursor_x > 8) { /* 僶僢僋僗儁乕僗 */
-					/* 僇乕僜儖傪僗儁乕僗偱徚偟偰偐傜丄僇乕僜儖傪1偮栠偡 */
+				if (i == 256 + 0x0e && cursor_x > 8) { /* 退格键 */
+					/* 退一次光标 */
 					putfonts8_asc_sht(sht_win, cursor_x, 28, COL8_000000, COL8_FFFFFF, " ", 1);
 					cursor_x -= 8;
 				}
-				/* 僇乕僜儖偺嵞昞帵 */
+				/* 光标再显示 */
 				boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 7, 43);
 				sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
 			} else if (512 <= i && i <= 767) { /* 鼠标数据 */
@@ -179,7 +181,7 @@ void HariMain(void)
 					putfonts8_asc_sht(sht_back, 0, 0, COL8_FFFFFF, COL8_008484, s, 10);
 					sheet_slide(sht_mouse, mx, my);
 					if ((mdec.btn & 0x01) != 0) {
-						/* 嵍儃僞儞傪墴偟偰偄偨傜丄sht_win傪摦偐偡 */
+						/* 按下左键移动sht_win */
 						sheet_slide(sht_win, mx - 80, my - 8);
 					}
 				}

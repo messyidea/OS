@@ -3,7 +3,7 @@
 
 [INSTRSET "i486p"]
 
-VBEMODE	EQU		0x105			; 1024 x  768 x 8bit僇儔乕
+VBEMODE	EQU		0x103			; 1024 x  768 x 8bit僇儔乕
 ; 乮夋柺儌乕僪堦棗乯
 ;	0x100 :  640 x  400 x 8bit僇儔乕
 ;	0x101 :  640 x  480 x 8bit僇儔乕
@@ -25,7 +25,7 @@ VRAM	EQU		0x0ff8			; 僌儔僼傿僢僋僶僢僼傽偺奐巒斣抧
 
 		ORG		0xc200			; 偙偺僾儘僌儔儉偑偳偙偵撉傒崬傑傟傞偺偐
 
-; VBE懚嵼妋擣
+; 确认VBE是否存在
 
 		MOV		AX,0x9000
 		MOV		ES,AX
@@ -35,13 +35,13 @@ VRAM	EQU		0x0ff8			; 僌儔僼傿僢僋僶僢僼傽偺奐巒斣抧
 		CMP		AX,0x004f
 		JNE		scrn320
 
-; VBE偺僶乕僕儑儞僠僃僢僋
+; 检查VBE版本
 
 		MOV		AX,[ES:DI+4]
 		CMP		AX,0x0200
 		JB		scrn320			; if (AX < 0x0200) goto scrn320
 
-; 夋柺儌乕僪忣曬傪摼傞
+; 取得画面模式信息
 
 		MOV		CX,VBEMODE
 		MOV		AX,0x4f01
@@ -49,7 +49,7 @@ VRAM	EQU		0x0ff8			; 僌儔僼傿僢僋僶僢僼傽偺奐巒斣抧
 		CMP		AX,0x004f
 		JNE		scrn320
 
-; 夋柺儌乕僪忣曬偺妋擣
+; 画面模式信息确认
 
 		CMP		BYTE [ES:DI+0x19],8
 		JNE		scrn320
@@ -57,14 +57,14 @@ VRAM	EQU		0x0ff8			; 僌儔僼傿僢僋僶僢僼傽偺奐巒斣抧
 		JNE		scrn320
 		MOV		AX,[ES:DI+0x00]
 		AND		AX,0x0080
-		JZ		scrn320			; 儌乕僪懏惈偺bit7偑0偩偭偨偺偱偁偒傜傔傞
+		JZ		scrn320			; 模式属性bit7是0，所以放弃
 
-; 夋柺儌乕僪偺愗傝懼偊
+; 画面模式切换
 
 		MOV		BX,VBEMODE+0x4000
 		MOV		AX,0x4f02
 		INT		0x10
-		MOV		BYTE [VMODE],8	; 夋柺儌乕僪傪儊儌偡傞乮C尵岅偑嶲徠偡傞乯
+		MOV		BYTE [VMODE],8	; 记下画面模式
 		MOV		AX,[ES:DI+0x12]
 		MOV		[SCRNX],AX
 		MOV		AX,[ES:DI+0x14]
@@ -74,10 +74,10 @@ VRAM	EQU		0x0ff8			; 僌儔僼傿僢僋僶僢僼傽偺奐巒斣抧
 		JMP		keystatus
 
 scrn320:
-		MOV		AL,0x13			; VGA僌儔僼傿僢僋僗丄320x200x8bit僇儔乕
+		MOV		AL,0x13			; VGA图，320x200x8bit彩色
 		MOV		AH,0x00
 		INT		0x10
-		MOV		BYTE [VMODE],8	; 夋柺儌乕僪傪儊儌偡傞乮C尵岅偑嶲徠偡傞乯
+		MOV		BYTE [VMODE],8	; 记下画面模式
 		MOV		WORD [SCRNX],320
 		MOV		WORD [SCRNY],200
 		MOV		DWORD [VRAM],0x000a0000

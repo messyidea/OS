@@ -181,7 +181,7 @@ struct TIMER {
 	int data;
 };
 struct TIMERCTL {
-	unsigned int count, next;
+	unsigned int count, next;	//下一个时刻 
 	struct TIMER *t0;
 	struct TIMER timers0[MAX_TIMER];
 };
@@ -205,18 +205,18 @@ struct TSS32 {
 	int ldtr, iomap;
 };
 struct TASK {
-	int sel, flags; /* sel偼GDT偺斣崋偺偙偲 */
+	int sel, flags; /* sel用来存放GDT编号 */
 	int level, priority;
 	struct TSS32 tss;
 };
 struct TASKLEVEL {
-	int running; /* 摦嶌偟偰偄傞僞僗僋偺悢 */
-	int now; /* 尰嵼摦嶌偟偰偄傞僞僗僋偑偳傟偩偐暘偐傞傛偆偵偡傞偨傔偺曄悢 */
+	int running; /* 正在运行的任务数量 */
+	int now; /* 当前运行的是哪个任务 */
 	struct TASK *tasks[MAX_TASKS_LV];
 };
 struct TASKCTL {
-	int now_lv; /* 尰嵼摦嶌拞偺儗儀儖 */
-	char lv_change; /* 師夞僞僗僋僗僀僢僠偺偲偒偵丄儗儀儖傕曄偊偨傎偆偑偄偄偐偳偆偐 */
+	int now_lv; /* 现在活动中的level */
+	char lv_change; /* 下次任务切换时是否需要改变level */
 	struct TASKLEVEL level[MAX_TASKLEVELS];
 	struct TASK tasks0[MAX_TASKS];
 };

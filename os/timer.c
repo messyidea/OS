@@ -24,9 +24,9 @@ void init_pit(void)
 	t = timer_alloc(); /* 分配一个time */
 	t->timeout = 0xffffffff;	//守护的，保证不会没有计时器运行 
 	t->flags = TIMER_FLAGS_USING;
-	t->next = 0; /* ???????? */
+	t->next = 0; /* 末尾 */
 	timerctl.t0 = t; /* 指向第一个 */
-	timerctl.next = 0xffffffff; /* 下个 */
+	timerctl.next = 0xffffffff; /* 只有哨兵，下个超时就是自己 */
 	return;
 }
 
@@ -39,18 +39,18 @@ struct TIMER *timer_alloc(void)
 			return &timerctl.timers0[i];
 		}
 	}
-	return 0; /* ????????????? */
+	return 0; /* 没找到 */
 }
 
 void timer_free(struct TIMER *timer)
 {
-	timer->flags = 0; /* ???g?p */
+	timer->flags = 0; /* 释放计时器 */
 	return;
 }
 
 void timer_init(struct TIMER *timer, struct FIFO32 *fifo, int data)
 {
-	timer->fifo = fifo;
+	timer->fifo = fifo;	//标记 
 	timer->data = data;
 	return;
 }
@@ -65,21 +65,21 @@ void timer_settime(struct TIMER *timer, unsigned int timeout)
 	io_cli();
 	t = timerctl.t0;
 	if (timer->timeout <= t->timeout) {
-		/* ?擪??????? */
+		/* 插入最前面的情况 */
 		timerctl.t0 = timer;
-		timer->next = t; /* ????t */
+		timer->next = t; /* 下面一个是t */
 		timerctl.next = timer->timeout;
 		io_store_eflags(e);
 		return;
 	}
-	/* ?????????????????T?? */
+	/* 寻找插入位置 */
 	for (;;) {
 		s = t;
 		t = t->next;
 		if (timer->timeout <= t->timeout) {
-			/* s??t????????? */
-			s->next = timer; /* s?????timer */
-			timer->next = t; /* timer?????t */
+			/* 插入到s和t之间 */
+			s->next = timer; /* s下个是timer */
+			timer->next = t; /* timer下个是t */
 			io_store_eflags(e);
 			return;
 		}
@@ -92,25 +92,25 @@ void inthandler20(int *esp)
 	char ts = 0;
 	io_out8(PIC0_OCW2, 0x60);	/* 把IRQ-00信号接收结束的信息通知PIC */
 	timerctl.count++;
-	if (timerctl.next > timerctl.count) {
+	if (timerctl.next > timerctl.count) {	//还没到下个时刻，结束 
 		return;
 	}
-	timer = timerctl.t0; /* ??肠?????擪???n??timer?ɑ?? */
+	timer = timerctl.t0; /* 起始的位置 */
 	for (;;) {
-		/* timers??^?C?}??S?ē??????????Aflags??m?F????? */
+		/* timers定时器都处于动作中，不用确认flag */
 		if (timer->timeout > timerctl.count) {
 			break;
 		}
-		/* ?^?C???A?E?g */
+		/* 超时 */
 		timer->flags = TIMER_FLAGS_ALLOC;
 		if (timer != task_timer) {
 			fifo32_put(timer->fifo, timer->data);
 		} else {
-			ts = 1; /* task_timer???^?C???A?E?g???? */
+			ts = 1; /* task_timer超时切换 */
 		}
-		timer = timer->next; /* ????^?C?}???n??timer?ɑ?? */
+		timer = timer->next; /* 下一个定时器地址给timer */
 	}
-	timerctl.t0 = timer;
+	timerctl.t0 = timer;	//现在第一个是timer了 
 	timerctl.next = timer->timeout;
 	if (ts != 0) {
 		task_switch();

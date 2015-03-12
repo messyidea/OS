@@ -11,9 +11,9 @@ void fifo32_init(struct FIFO32 *fifo, int size, int *buf, struct TASK *task)
 	fifo->buf = buf;
 	fifo->free = size; /* 剩余 */
 	fifo->flags = 0;
-	fifo->p = 0; /* 尾 */
-	fifo->q = 0; /* 头 */
-	fifo->task = task; /* 僨乕僞偑擖偭偨偲偒偵婲偙偡僞僗僋 */
+	fifo->p = 0; /* 写入位置 */
+	fifo->q = 0; /* 读取位置 */
+	fifo->task = task; /* 有数据写入时要唤醒的任务 */
 	return;
 }
 
@@ -32,8 +32,8 @@ int fifo32_put(struct FIFO32 *fifo, int data)
 	}
 	fifo->free--;
 	if (fifo->task != 0) {
-		if (fifo->task->flags != 2) { /* 僞僗僋偑怮偰偄偨傜 */
-			task_run(fifo->task, -1, 0); /* 婲偙偟偰偁偘傞 */
+		if (fifo->task->flags != 2) { /* 如果任务处于休眠状态 */
+			task_run(fifo->task, -1, 0); /* 将任务唤醒 */
 		}
 	}
 	return 0;
