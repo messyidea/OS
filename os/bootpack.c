@@ -10,14 +10,14 @@ void task_b_main(struct SHEET *sht_back);
 
 void HariMain(void)
 {
-	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;
+	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;      //h头文件的宏定义
 	struct FIFO32 fifo;
 	char s[40];
 	int fifobuf[128];
 	int mx, my, i, cursor_x, cursor_c;
 	unsigned int memtotal;
 	struct MOUSE_DEC mdec;      //鼠标
-	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
+	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;      //分配的内存开始地址
 	struct SHTCTL *shtctl;
 	static char keytable[0x54] = {
 		0,   0,   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^', 0,   0,
@@ -34,36 +34,36 @@ void HariMain(void)
 
 	init_gdtidt();      // 初始化gdt和idt
 	init_pic();         // pic初始化
-	io_sti(); /* IDT/PIC偺弶婜壔偑廔傢偭偨偺偱CPU偺妱傝崬傒嬛巭傪夝彍 */
+	io_sti(); /* IDT/PIC初始化完成，开放CPU中断 */
 	fifo32_init(&fifo, 128, fifobuf, 0);
-	init_pit();
+	init_pit(); 
 	init_keyboard(&fifo, 256);
 	enable_mouse(&fifo, 512, &mdec);
-	io_out8(PIC0_IMR, 0xf8); /* PIT偲PIC1偲僉乕儃乕僪傪嫋壜(11111000) */
-	io_out8(PIC1_IMR, 0xef); /* 儅僂僗傪嫋壜(11101111) */
+	io_out8(PIC0_IMR, 0xf8); /* 开放鼠标中断 */
+	io_out8(PIC1_IMR, 0xef); /* 开放键盘中断 */
 
-	memtotal = memtest(0x00400000, 0xbfffffff);
-	memman_init(memman);
+	memtotal = memtest(0x00400000, 0xbfffffff);     //测试内存数量
+	memman_init(memman);		//初始化内存 
 	memman_free(memman, 0x00001000, 0x0009e000); /* 0x00001000 - 0x0009efff */
-	memman_free(memman, 0x00400000, memtotal - 0x00400000);
+	memman_free(memman, 0x00400000, memtotal - 0x00400000); 	//待看 
 
 	init_palette();     //初始化调色板
-	shtctl = shtctl_init(memman, binfo->vram, binfo->scrnx, binfo->scrny);
+	shtctl = shtctl_init(memman, binfo->vram, binfo->scrnx, binfo->scrny); //初始化图层信息 
 	task_a = task_init(memman);
 	fifo.task = task_a;
 	task_run(task_a, 1, 2);
 
 	/* sht_back */
-	sht_back  = sheet_alloc(shtctl);
-	buf_back  = (unsigned char *) memman_alloc_4k(memman, binfo->scrnx * binfo->scrny);
-	sheet_setbuf(sht_back, buf_back, binfo->scrnx, binfo->scrny, -1); /* 摟柧怓側偟 */
-	init_screen8(buf_back, binfo->scrnx, binfo->scrny);
+	sht_back  = sheet_alloc(shtctl);	//分配一个sheet 
+	buf_back  = (unsigned char *) memman_alloc_4k(memman, binfo->scrnx * binfo->scrny);     //分配内存 
+	sheet_setbuf(sht_back, buf_back, binfo->scrnx, binfo->scrny, -1); /* 设置sheet */
+	init_screen8(buf_back, binfo->scrnx, binfo->scrny);     //初始化,就是画初始菜单栏
 
 	/* sht_win_b */
 	for (i = 0; i < 3; i++) {
 		sht_win_b[i] = sheet_alloc(shtctl);
 		buf_win_b = (unsigned char *) memman_alloc_4k(memman, 144 * 52);
-		sheet_setbuf(sht_win_b[i], buf_win_b, 144, 52, -1); /* 摟柧怓側偟 */
+		sheet_setbuf(sht_win_b[i], buf_win_b, 144, 52, -1); /* 设置窗口 */
 		sprintf(s, "task_b%d", i);
 		make_window8(buf_win_b, 144, 52, s, 0);
 		task_b[i] = task_alloc();
@@ -95,7 +95,7 @@ void HariMain(void)
 	sht_mouse = sheet_alloc(shtctl);
 	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);
 	init_mouse_cursor8(buf_mouse, 99);
-	mx = (binfo->scrnx - 16) / 2; /* 夋柺拞墰偵側傞傛偆偵嵗昗寁嶼 */
+	mx = (binfo->scrnx - 16) / 2; /* 中间位置 */
 	my = (binfo->scrny - 28 - 16) / 2;
 
 	sheet_slide(sht_back, 0, 0);
@@ -144,9 +144,9 @@ void HariMain(void)
 				/* 僇乕僜儖偺嵞昞帵 */
 				boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 7, 43);
 				sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
-			} else if (512 <= i && i <= 767) { /* 儅僂僗僨乕僞 */
+			} else if (512 <= i && i <= 767) { /* 鼠标数据 */
 				if (mouse_decode(&mdec, i - 512) != 0) {
-					/* 僨乕僞偑3僶僀僩懙偭偨偺偱昞帵 */
+					/* 显示3个数据 */
 					sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
 					if ((mdec.btn & 0x01) != 0) {
 						s[1] = 'L';
@@ -157,8 +157,9 @@ void HariMain(void)
 					if ((mdec.btn & 0x04) != 0) {
 						s[2] = 'C';
 					}
+					//刷新显示 
 					putfonts8_asc_sht(sht_back, 32, 16, COL8_FFFFFF, COL8_008484, s, 15);
-					/* 儅僂僗僇乕僜儖偺堏摦 */
+					/* 边界处理 */
 					mx += mdec.x;
 					my += mdec.y;
 					if (mx < 0) {
@@ -174,6 +175,7 @@ void HariMain(void)
 						my = binfo->scrny - 1;
 					}
 					sprintf(s, "(%3d, %3d)", mx, my);
+					//刷新显示 
 					putfonts8_asc_sht(sht_back, 0, 0, COL8_FFFFFF, COL8_008484, s, 10);
 					sheet_slide(sht_mouse, mx, my);
 					if ((mdec.btn & 0x01) != 0) {
@@ -197,6 +199,7 @@ void HariMain(void)
 	}
 }
 
+//主要是buf里面的数据 
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title, char act)
 {
 	static char closebtn[14][16] = {
@@ -253,6 +256,7 @@ void make_window8(unsigned char *buf, int xsize, int ysize, char *title, char ac
 	return;
 }
 
+//在x,y开始处显示颜色为c的字符串s 
 void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, int l)
 {
 	boxfill8(sht->buf, sht->bxsize, b, x, y, x + l * 8 - 1, y + 15);

@@ -74,7 +74,7 @@ void init_screen8(char *vram, int x, int y)
 	boxfill8(vram, x, COL8_FFFFFF, x -  3, y - 24, x -  3, y -  3);
 	return;
 }
-//输出字符串
+//输出单个字符,c是颜色，font是字形
 void putfont8(char *vram, int xsize, int x, int y, char c, char *font)
 {
 	int i;
@@ -93,7 +93,7 @@ void putfont8(char *vram, int xsize, int x, int y, char c, char *font)
 	}
 	return;
 }
-
+//输出字符串，利用了hankaku,在x,y处显示颜色为c的字符串s 
 void putfonts8_asc(char *vram, int xsize, int x, int y, char c, unsigned char *s)
 {
 	extern char hankaku[4096];
@@ -142,6 +142,7 @@ void init_mouse_cursor8(char *mouse, char bc)
 	}
 	return;
 }
+
 //把一块矩形描绘到屏幕上
 void putblock8_8(char *vram, int vxsize, int pxsize,
 	int pysize, int px0, int py0, char *buf, int bxsize)

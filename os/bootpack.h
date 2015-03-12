@@ -1,7 +1,7 @@
 /* asmhead.nas */
 struct BOOTINFO { /* 0x0ff0-0x0fff */
-	char cyls; /* 柱头数？ */
-	char leds; /* 僽乕僩帪偺僉乕儃乕僪偺LED偺忬懺 */
+	char cyls; /* 读到硬盘何处位置 */
+	char leds; /* 启动时键盘LED状态 */
 	char vmode; /* 颜色位数 */
 	char reserve;
 	short scrnx, scrny; /* 分辨率 */
@@ -146,15 +146,21 @@ int memman_free_4k(struct MEMMAN *man, unsigned int addr, unsigned int size);
 /* sheet.c */
 #define MAX_SHEETS		256
 struct SHEET {
-	unsigned char *buf;
+	unsigned char *buf;		//图层上描绘的内容 
 	int bxsize, bysize, vx0, vy0, col_inv, height, flags;
+	//bxsize bysize 图层的整体大小
+	//vx0,vy0图层的坐标
+	//col_inv表示透明色色号
+	//height 图层高度
+	//flags 设定信息 
 	struct SHTCTL *ctl;
 };
+//管理多图层的结构 
 struct SHTCTL {
-	unsigned char *vram, *map;
-	int xsize, ysize, top;
-	struct SHEET *sheets[MAX_SHEETS];
-	struct SHEET sheets0[MAX_SHEETS];
+	unsigned char *vram, *map;	//vram地址，缓冲区地址 
+	int xsize, ysize, top;	//vram大小和最上层图层的高度 
+	struct SHEET *sheets[MAX_SHEETS];	//保存sheet的顺序的 
+	struct SHEET sheets0[MAX_SHEETS];	//保存内容的 
 };
 struct SHTCTL *shtctl_init(struct MEMMAN *memman, unsigned char *vram, int xsize, int ysize);
 struct SHEET *sheet_alloc(struct SHTCTL *ctl);
@@ -168,7 +174,9 @@ void sheet_free(struct SHEET *sht);
 #define MAX_TIMER		500
 struct TIMER {
 	struct TIMER *next;
+	//next 下一个 
 	unsigned int timeout, flags;
+	//timeout 超时  flag 定时器状态 
 	struct FIFO32 *fifo;
 	int data;
 };
