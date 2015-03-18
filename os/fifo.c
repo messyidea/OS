@@ -61,3 +61,5 @@ int fifo32_status(struct FIFO32 *fifo)
 {
 	return fifo->size - fifo->free;
 }
+
+
