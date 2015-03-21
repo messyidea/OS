@@ -261,6 +261,7 @@ void cons_putstr1(struct CONSOLE *cons, char *s, int l);
 //void hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax);
 int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax);
 int *inthandler0d(int *esp);
+int *inthandler0c(int *esp);
 
 
 /* file.c */
