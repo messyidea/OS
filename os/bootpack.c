@@ -41,6 +41,8 @@ void HariMain(void)
 	struct TASK *task_a, *task_cons;
 	struct TIMER *timer;
     int key_to = 0, key_shift = 0, key_leds = (binfo->leds >> 4) & 7,keycmd_wait = -1;
+    struct CONSOLE *cons;
+
 
 	init_gdtidt();      // 初始化gdt和idt
 	init_pic();         // pic初始化
@@ -261,6 +263,14 @@ void HariMain(void)
 					key_leds ^= 1;
 					fifo32_put(&keycmd, KEYCMD_LED);
 					fifo32_put(&keycmd, key_leds);
+				}
+                if (i == 256 + 0x3b && key_shift != 0 && task_cons->tss.ss0 != 0) {	/* Shift+F1 */
+					cons = (struct CONSOLE *) *((int *) 0x0fec);
+					cons_putstr0(cons, "\nBreak(key) :\n");
+					io_cli();	//不能在改变寄存器值时切换到其它任务
+					task_cons->tss.eax = (int) &(task_cons->tss.esp0);
+					task_cons->tss.eip = (int) asm_end_app;
+					io_sti();
 				}
 				if (i == 256 + 0xfa) {	/* 键盘成功接收到数据 */
 					keycmd_wait = -1;
