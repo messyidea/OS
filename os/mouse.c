@@ -6,7 +6,6 @@ struct FIFO32 *mousefifo;
 int mousedata0;
 
 void inthandler2c(int *esp)
-/* PS/2儅僂僗偐傜偺妱傝崬傒 */
 {
 	int data;
 	io_out8(PIC1_OCW2, 0x64);	/* 通知PIC1 IRQ-12受理完成 */
@@ -48,7 +47,6 @@ int mouse_decode(struct MOUSE_DEC *mdec, unsigned char dat)
 	if (mdec->phase == 1) {
 		/* 鼠标第一字节 */
 		if ((dat & 0xc8) == 0x08) {
-			/* 惓偟偄1僶僀僩栚偩偭偨 */
 			mdec->buf[0] = dat;
 			mdec->phase = 2;
 		}
