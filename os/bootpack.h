@@ -161,6 +161,7 @@ struct SHEET {
 	//height 图层高度
 	//flags 设定信息 
 	struct SHTCTL *ctl;
+    struct TASK *task;
 };
 //管理多图层的结构 
 struct SHTCTL {
