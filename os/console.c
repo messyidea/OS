@@ -16,7 +16,8 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	cons.cur_x =  8;
 	cons.cur_y = 28;
 	cons.cur_c = -1;
-    *((int *) 0x0fec) = (int) &cons;
+    //*((int *) 0x0fec) = (int) &cons;
+    task->cons = &cons;
 
 	fifo32_init(&task->fifo, 128, fifobuf, task);
 	timer = timer_alloc();
@@ -232,13 +233,14 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 			datsiz = *((int *) (p + 0x0010));
 			dathrb = *((int *) (p + 0x0014));
 			q = (char *) memman_alloc_4k(memman, segsiz);
-			*((int *) 0xfe8) = (int) q;
-			set_segmdesc(gdt + 1003, finfo->size - 1, (int) p, AR_CODE32_ER + 0x60);
-			set_segmdesc(gdt + 1004, segsiz - 1,      (int) q, AR_DATA32_RW + 0x60);
+			//*((int *) 0xfe8) = (int) q;
+            task->ds_base = (int) q;
+			set_segmdesc(gdt + task->sel/8 + 1000, finfo->size - 1, (int) p, AR_CODE32_ER + 0x60);
+			set_segmdesc(gdt + task->sel/8 + 2000, segsiz - 1,      (int) q, AR_DATA32_RW + 0x60);
 			for (i = 0; i < datsiz; i++) {
 				q[esp + i] = p[dathrb + i];
 			}
-			start_app(0x1b, 1003 * 8, esp, 1004 * 8, &(task->tss.esp0));
+			start_app(0x1b, task->sel + 1000*8, esp, task->sel + 2000 * 8, &(task->tss.esp0));
             shtctl = (struct SHTCTL *) *((int *) 0x0fe4);
 			for (i = 0; i < MAX_SHEETS; i++) {
 				sht = &(shtctl->sheets0[i]);
@@ -356,9 +358,11 @@ void cmd_mem(struct CONSOLE *cons, unsigned int memtotal)
 int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax)
 {
     
-    int ds_base = *((int *) 0xfe8);
+    //int ds_base = *((int *) 0xfe8);
+    
 	struct TASK *task = task_now();
-	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
+    int ds_base = task->ds_base;
+	struct CONSOLE *cons = task->cons;
 	struct SHTCTL *shtctl = (struct SHTCTL *) *((int *) 0x0fe4);    //harimain中已经保存了全局变量的地址
 	struct SHEET *sht;
 	int *reg = &eax + 1;	/* 用于api的返回值 */
@@ -382,8 +386,11 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         sht->flags |= 0x10;
 		sheet_setbuf(sht, (char *) ebx + ds_base, esi, edi, eax);
 		make_window8((char *) ebx + ds_base, esi, edi, (char *) ecx + ds_base, 0);
-		sheet_slide(sht, 100, 50);
-		sheet_updown(sht, 3);	//背景放置在3的位置
+        sheet_slide(sht, (shtctl->xsize - esi) / 2, (shtctl->ysize - edi) / 2);
+		sheet_updown(sht, shtctl->top); /* 将窗口图层高度指定为当前鼠标所在图层高度，鼠标移动到上层 */
+        
+		//sheet_slide(sht, 100, 50);
+		//sheet_updown(sht, 3);	//背景放置在3的位置
 		reg[7] = (int) sht;
     } else if (edx == 6) {
 		//sht = (struct SHEET *) ebx;
@@ -469,15 +476,31 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
         timer_settime((struct TIMER *) ebx, eax);
     } else if(edx == 19) {
         timer_free((struct TIMER *) ebx);
-    }
+    } else if (edx == 20) {
+        //蜂鸣器相关调用
+		if (eax == 0) {
+            //OFF
+			i = io_in8(0x61);
+			io_out8(0x61, i & 0x0d);
+		} else {
+            //ON
+			i = 1193180000 / eax;
+			io_out8(0x43, 0xb6);
+			io_out8(0x42, i & 0xff);
+			io_out8(0x42, i >> 8);
+			i = io_in8(0x61);
+			io_out8(0x61, (i | 0x03) & 0x0f);
+		}
+	}
 
 	return 0;
 }
 
 int *inthandler0c(int *esp)
 {
-	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
+	
 	struct TASK *task = task_now();
+    struct CONSOLE *cons = task->cons;
 	char s[30];
 	cons_putstr0(cons, "\nINT 0C :\n Stack Exception.\n");
 	sprintf(s, "EIP = %08X\n", esp[11]);
@@ -489,8 +512,9 @@ int *inthandler0c(int *esp)
 
 int *inthandler0d(int *esp)
 {
-	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
+	
 	struct TASK *task = task_now();
+    struct CONSOLE *cons = task->cons;
     char s[30];
 	cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
     sprintf(s, "EIP = %08X\n", esp[11]);

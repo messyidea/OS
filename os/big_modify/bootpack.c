@@ -227,14 +227,7 @@ void HariMain(void)
 					}
 				}
                 if (i == 256 + 0x0f) { /* Tab */
-					if (key_to == 0) {
-                        cursor_c = keywin_off(key_win, sht_win, cursor_c, cursor_x);
-						//key_to = 1;
-						//make_wtitle8(buf_win,  sht_win->bxsize,  "task_a",  0);
-						//make_wtitle8(buf_cons, sht_cons->bxsize, "console", 1);
-                        //cursor_c = -1;  //不显示鼠标
-                        //boxfill8(sht_win->buf, sht_win->bxsize, COL8_FFFFFF, cursor_x, 28, cursor_x + 7, 43);
-                        //fifo32_put(&task_cons->fifo, 2);    //向cons发送信息
+                    cursor_c = keywin_off(key_win, sht_win, cursor_c, cursor_x);
                     j = key_win->height - 1;
 					if (j == 0) {
 						j = shtctl->top - 1;
@@ -242,15 +235,6 @@ void HariMain(void)
 					key_win = shtctl->sheets[j];
 					cursor_c = keywin_on(key_win, sht_win, cursor_c);
                         
-					/*} else {
-						key_to = 0;
-						make_wtitle8(buf_win,  sht_win->bxsize,  "task_a",  1);
-						make_wtitle8(buf_cons, sht_cons->bxsize, "console", 0);
-                        cursor_c = COL8_000000;     //显示鼠标
-                        fifo32_put(&task_cons->fifo, 3);
-					}
-					sheet_refresh(sht_win,  0, 0, sht_win->bxsize,  21);
-					sheet_refresh(sht_cons, 0, 0, sht_cons->bxsize, 21);*/
 				}
                 if (i == 256 + 0x2a) {	/* 左shift ON */
 					key_shift |= 1;
@@ -305,19 +289,6 @@ void HariMain(void)
 				sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
 			} else if (512 <= i && i <= 767) { /* 鼠标数据 */
 				if (mouse_decode(&mdec, i - 512) != 0) {
-					// 显示3个数据 
-					/*sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
-					if ((mdec.btn & 0x01) != 0) {
-						s[1] = 'L';
-					}
-					if ((mdec.btn & 0x02) != 0) {
-						s[3] = 'R';
-					}
-					if ((mdec.btn & 0x04) != 0) {
-						s[2] = 'C';
-					}*/
-					//刷新显示 
-					//putfonts8_asc_sht(sht_back, 32, 16, COL8_FFFFFF, COL8_008484, s, 15);
 					/* 边界处理 */
 					mx += mdec.x;
 					my += mdec.y;
@@ -348,6 +319,12 @@ void HariMain(void)
 								if (0 <= x && x < sht->bxsize && 0 <= y && y < sht->bysize) {
 									if (sht->buf[y * sht->bxsize + x] != sht->col_inv) {
 										sheet_updown(sht, shtctl->top - 1);
+                                        if (sht != key_win) {
+											cursor_c = keywin_off(key_win, sht_win, cursor_c, cursor_x);
+											key_win = sht;
+											cursor_c = keywin_on(key_win, sht_win, cursor_c);
+										}
+                                        
 										if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21) {
 											mmx = mx;	/* 进入窗口移动模式 */
 											mmy = my;
