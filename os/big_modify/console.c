@@ -9,7 +9,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	struct TIMER *timer;
 	struct TASK *task = task_now();
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
-	int i, *fat = (int *) memman_alloc_4k(memman, 4 * 2880);
+	int i, fifobuf[128], *fat = (int *) memman_alloc_4k(memman, 4 * 2880);
 	struct CONSOLE cons;
 	char cmdline[30];
 	cons.sht = sheet;
@@ -19,10 +19,10 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
     //*((int *) 0x0fec) = (int) &cons;
     task->cons = &cons;
 
-	//fifo32_init(&task->fifo, 128, fifobuf, task);
-	cons.timer = timer_alloc();
-	timer_init(cons.timer, &task->fifo, 1);
-	timer_settime(cons.timer, 50);
+	fifo32_init(&task->fifo, 128, fifobuf, task);
+	timer = timer_alloc();
+	timer_init(timer, &task->fifo, 1);
+	timer_settime(timer, 50);
 	file_readfat(fat, (unsigned char *) (ADR_DISKIMG + 0x000200));
 
 	/* 显示提示符 */
@@ -38,17 +38,17 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 			io_sti();
 			if (i <= 1) { /* 光标的定时器 */
 				if (i != 0) {
-					timer_init(cons.timer, &task->fifo, 0); /* 下次置0 */
+					timer_init(timer, &task->fifo, 0); /* 下次置0 */
 					if (cons.cur_c >= 0) {
 						cons.cur_c = COL8_FFFFFF;
 					}
 				} else {
-					timer_init(cons.timer, &task->fifo, 1); /* 下次置1 */
+					timer_init(timer, &task->fifo, 1); /* 下次置1 */
 					if (cons.cur_c >= 0) {
 						cons.cur_c = COL8_000000;
 					}
 				}
-				timer_settime(cons.timer, 50);
+				timer_settime(timer, 50);
 			}
 			if (i == 2) {	/* 光标显示 */
 				cons.cur_c = COL8_FFFFFF;
